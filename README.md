@@ -129,7 +129,7 @@ QueueService简单消息流程图
     go run client/main.go
     ```
 	
-## 测试
+## 压测
 	通过修改 QueueService/client/main.go:182 benchCount 进行压测
 	压测用例：
 	1万用户进行测试，电脑配置：
