@@ -7,7 +7,7 @@ import (
 //go test -v memory_queue.go memory_queue_test.go
 
 func TestQueue(t *testing.T) {
-	queue := NewMemoryQueue()
+	queue := NewMemoryQueue(1000)
 
 	// 测试压入
 	for i := 1; i <= 100; i++ {
