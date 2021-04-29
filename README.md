@@ -107,6 +107,7 @@ QueueService简单消息流程图
         CacheList   *list.List // 用户队列
         CurIncNum   uint64     // 当前号码
         IncOrderNum uint64     // 自增号码
+	MaxCount    uint64     // 最大数量
     }
     ```
     服务器队列目前用的是内存，根据消耗与生产进行管理，每个新加入的获得一个顺序号码
