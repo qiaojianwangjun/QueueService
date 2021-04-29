@@ -11,11 +11,12 @@ type Pprof struct {
 }
 
 type Config struct {
-	Service       string          `json:"service"`    // 服务名称
-	Port          int             `json:"port"`       // 端口号
-	PProfPort     int             `json:"pprofPort"`  // pprof端口号
-	PublicKey     string          `json:"publicKey"`  // rsa的公钥
-	PrivateKey    string          `json:"privateKey"` // rsa的私钥
+	Service       string          `json:"service"`     // 服务名称
+	Port          int             `json:"port"`        // 端口号
+	MaxQueueCnt   int64           `json:"maxQueueCnt"` // 队列最大人数
+	PProfPort     int             `json:"pprofPort"`   // pprof端口号
+	PublicKey     string          `json:"publicKey"`   // rsa的公钥
+	PrivateKey    string          `json:"privateKey"`  // rsa的私钥
 	PublicKeyRSA  *rsa.PublicKey  `json:"-"`
 	PrivateKeyRSA *rsa.PrivateKey `json:"-"`
 }

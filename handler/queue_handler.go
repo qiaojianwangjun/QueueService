@@ -2,9 +2,12 @@ package handler
 
 import (
 	"QueueService/cmd"
+	"QueueService/config"
 	"QueueService/log"
 	"QueueService/queue"
 	"QueueService/server"
+	"QueueService/util"
+	"time"
 )
 
 type Handler struct {
@@ -13,7 +16,7 @@ type Handler struct {
 
 func NewHandler() *Handler {
 	h := &Handler{}
-	h.Queue = queue.NewMemoryQueue()
+	h.Queue = queue.NewMemoryQueue(uint64(config.GetConfig().MaxQueueCnt))
 	return h
 }
 
@@ -22,13 +25,21 @@ func NewHandler() *Handler {
 */
 func (h *Handler) BindUser(sess *server.Session, req *cmd.BindUser) (code int, message string, respData interface{}) {
 	log.Debug("BindUser", req)
-	// TODO 验证
+	// TODO 验证用户真实性
+	password := util.GeneratePasswd(16, util.CharSetTypeMix)
 	sess.UId = req.UserId
 	sess.BindParam = req
+	sess.Password = []byte(password)
+
+	// 检测是否已满
+	if h.Queue.IsFull() {
+		code = -1
+		return
+	}
 
 	old := sess.Server.Sessions.StoreOrUpdate(sess.UId, sess)
 	if old != nil {
-		log.Info("BindUser other login userId", req.UserId)
+		log.Info("BindUser other login userId", req.UserId, sess.UId)
 		old.Close("SysCmdFatal", "other login")
 		code = -1
 		return
@@ -47,7 +58,10 @@ func (h *Handler) BindUser(sess *server.Session, req *cmd.BindUser) (code int, m
 	defer func() {
 		sess.SendResp("QueryUserRank", 0, "", respRank)
 	}()
-	respData = cmd.BindUserResp{}
+	respData = cmd.BindUserResp{
+		EncryptType: "",
+		Password:    password,
+	}
 	return
 }
 
@@ -92,10 +106,14 @@ func (h *Handler) ConsumeUser(sess *server.Session, req *cmd.ConsumeUser) (code 
 			continue
 		}
 
+		type userInfo struct {
+			UserId int64
+		}
+
 		// 通知玩家可以登录
 		// TODO token生成与持久化供其他服务使用或解密
 		notify := cmd.LoginGameNotify{
-			Token: "",
+			Token: util.CreateToken(userInfo{UserId: userId}, 30*time.Second, config.GetConfig().PublicKeyRSA),
 		}
 		targetSess.SendResp("LoginGameNotify", 0, "", notify)
 		break

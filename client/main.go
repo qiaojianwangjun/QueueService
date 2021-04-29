@@ -15,6 +15,8 @@ import (
 type Client struct {
 	UserId      int64
 	Url         string
+	EncryptType string
+	Password    string
 	Wg          *sync.WaitGroup
 	RttAllTime  int64
 	RttAllCount int64
@@ -99,6 +101,15 @@ func (c *Client) HandleMsg(data []byte) {
 
 	if resp.Cmd == "BindUserResp" {
 		log.Debug("HandleMsg BindUserResp, userId:", c.UserId)
+		d := cmd.BindUserResp{}
+		err := json.Unmarshal(resp.Data, &d)
+		if err != nil {
+			log.Info("HandleMsg QueryUserRankResp fail, err:", err)
+			return
+		}
+		c.EncryptType = d.EncryptType
+		c.Password = d.Password
+		log.Info("HandleMsg bind success, userId:", c.UserId)
 	} else if resp.Cmd == "QueryUserRank" {
 		d := cmd.QueryUserRankResp{}
 		err := json.Unmarshal(resp.Data, &d)
@@ -157,15 +168,15 @@ func (c *Client) sendBindUser(userId int64, conn *tcp.TcpConn) {
 }
 
 func (c *Client) sendQueryUserRank(userId int64, conn *tcp.TcpConn) {
-	data := cmd.BindUser{
-		EncryptType: "sha-1",
-	}
+	data := cmd.QueryUserRank{}
+	// 编码
 	b, _ := json.Marshal(data)
 	request := cmd.ReqBase{
 		Cmd:  "QueryUserRank",
 		Data: b,
 	}
 	rb, _ := json.Marshal(request)
+	// TODO 加密
 	c.RttMap.Store(request.Cmd, time.Now())
 	err := conn.WriteMsg(rb)
 	if err != nil {

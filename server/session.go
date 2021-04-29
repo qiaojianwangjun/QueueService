@@ -23,6 +23,7 @@ type Session struct {
 	conn        conn2.IConn
 	ip          string
 	BindParam   *cmd.BindUser // 绑定参数
+	Password    []byte        // 通信用的密钥
 	recChan     chan []byte
 	sendChan    chan []byte
 	closeSig    *util.CloseSig
@@ -108,15 +109,6 @@ func (s *Session) rec() {
 	}
 }
 
-func (s *Session) decode(bytes []byte) (out []byte, err error) {
-	//bytes, err = s.encryptor.Decrypt(bytes)
-	//if err != nil {
-	//	return
-	//}
-	out = bytes
-	return
-}
-
 func (s *Session) doAck() (err error) {
 	return
 }
@@ -143,22 +135,19 @@ func (s *Session) doRec() {
 				continue
 			}
 
-			recMsg, err := s.decode(bytes)
-			if err != nil {
-				s.Close(SysCmdError, "decode recMsg err")
-				return
+			log.Debug("doRec bytes len", len(bytes))
+			// 检测是否已经绑定用户
+			if !s.CheckBindUser() {
+				// 绑定用户
+				if !s.BindUser(bytes) {
+					log.Debug("no bind user", len(bytes))
+					s.Close(SysCmdError, "no bind user")
+					return
+				}
+				continue
 			}
-			log.Debug("doRec recMsg len", len(recMsg))
-			msg := cmd.ReqBase{}
-			err = json.Unmarshal(recMsg, &msg)
-			if err != nil {
-				log.Info("doRec Unmarshal fail", err)
-				s.Close(SysCmdError, "doRec Unmarshal fail")
-				return
-			}
-
-			log.Debug("doRec msg:", msg)
-			err = s.HandleCmd(msg.Cmd, msg.Data)
+			// 处理数据
+			err := s.HandleData(bytes)
 			if err != nil {
 				log.Info("doRec HandleCmd fail", err)
 				s.Close(SysCmdError, "doRec HandleCmd fail")
@@ -166,6 +155,71 @@ func (s *Session) doRec() {
 			}
 		}
 	}
+}
+
+// CheckBindUser 检测是否绑定用户
+func (s *Session) CheckBindUser() bool {
+	if s.UId != 0 {
+		return true
+	}
+	return false
+}
+
+// BindUser 检测是否绑定用户
+func (s *Session) BindUser(data []byte) bool {
+	msg := cmd.ReqBase{}
+	err := json.Unmarshal(data, &msg)
+	if err != nil {
+		log.Info("doRec Unmarshal fail", err)
+		return false
+	}
+	if msg.Cmd != "BindUser" {
+		return false
+	}
+
+	err = s.HandleCmd(msg.Cmd, msg.Data)
+	if err != nil {
+		log.Info("doRec HandleCmd fail", err)
+		return false
+	}
+	return true
+}
+
+// Decrypt 解密消息
+func (s *Session) Decrypt(bytes []byte) (out []byte, err error) {
+	// TODO 解密
+	return bytes, nil
+}
+
+// HandleData 处理接收到的数据
+func (s *Session) HandleData(bytes []byte) (err error) {
+	log.Debug("doRec recMsg len", len(bytes))
+	// 解密消息
+	data, err := s.Decrypt(bytes)
+	if err != nil {
+		log.Info("doRec Decrypt fail", err)
+		s.Close(SysCmdError, "doRec Decrypt fail")
+		return
+	}
+
+	// 解码消息
+	msg := cmd.ReqBase{}
+	err = json.Unmarshal(data, &msg)
+	if err != nil {
+		log.Info("doRec Unmarshal fail", err)
+		s.Close(SysCmdError, "doRec Unmarshal fail")
+		return
+	}
+
+	// 处理消息
+	log.Debug("doRec msg:", msg)
+	err = s.HandleCmd(msg.Cmd, msg.Data)
+	if err != nil {
+		log.Info("doRec HandleCmd fail", err)
+		s.Close(SysCmdError, "doRec HandleCmd fail")
+		return
+	}
+	return
 }
 
 // HandleCmd 处理接收到的命令

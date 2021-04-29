@@ -1,6 +1,7 @@
 {
     "service": "QueueService",
     "port": 8080,
+    "maxQueueCnt": 50000,
     "publicKey": "",
     "privateKey": "",
     "pprofPort": 8090

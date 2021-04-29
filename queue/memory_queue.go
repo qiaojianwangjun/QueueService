@@ -18,10 +18,12 @@ type MemoryQueue struct {
 	CacheList   *list.List // 用户队列
 	CurIncNum   uint64     // 当前号码
 	IncOrderNum uint64     // 自增号码
+	MaxCount    uint64     // 最大数量
 }
 
-func NewMemoryQueue() *MemoryQueue {
+func NewMemoryQueue(maxCnt uint64) *MemoryQueue {
 	return &MemoryQueue{
+		MaxCount:  maxCnt,
 		CacheList: list.New(),
 	}
 }
@@ -29,6 +31,11 @@ func NewMemoryQueue() *MemoryQueue {
 // calcUserRank 计算用户位置
 func (m *MemoryQueue) calcUserRank(orderNumber uint64) (rank uint64) {
 	return orderNumber - (m.IncOrderNum - uint64(m.CacheList.Len()))
+}
+
+// IsFull 检测是否已满
+func (m *MemoryQueue) IsFull() bool {
+	return m.MaxCount <= m.IncOrderNum-m.CurIncNum
 }
 
 // calcUserRank 计算用户位置

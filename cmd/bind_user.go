@@ -10,4 +10,6 @@ type BindUser struct {
 }
 
 type BindUserResp struct {
+	EncryptType string // 协商加密类型
+	Password    string // 密码
 }
