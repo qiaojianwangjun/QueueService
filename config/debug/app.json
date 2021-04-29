@@ -1,0 +1,7 @@
+{
+    "service": "QueueService",
+    "port": 8080,
+    "publicKey": "",
+    "privateKey": "",
+    "pprofPort": 8090
+}
