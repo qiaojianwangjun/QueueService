@@ -93,6 +93,7 @@
     ```
 	
 QueueService简单消息流程图
+
 ![](images/frame_server.png)
 
 游戏服务器可能的逻辑图
@@ -133,7 +134,7 @@ QueueService简单消息流程图
 	1万用户进行测试，电脑配置：
 ![](images/computer.jpg)
     
-    各指标如下：
+各指标如下：
 cpu：
 ![](images/cpu_pprof.jpeg)
  
